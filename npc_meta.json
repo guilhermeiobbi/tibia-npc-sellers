@@ -1,0 +1,53 @@
+{
+  "featured": [
+    "Rashid",
+    "Nah'Bob",
+    "Haroun",
+    "Alesar",
+    "Yaman",
+    "Esrik",
+    "Yasir",
+    "Tamoril",
+    "Telas",
+    "Gnomission",
+    "Flint",
+    "Grizzly Adams"
+  ],
+  "notes": {
+    "Rashid": {
+      "g": "rashid",
+      "note": "Mercador viajante: seg Svargrond, ter Liberty Bay, qua Port Hope, qui Ankrahmun, sex Darashia, sáb Edron, dom Carlin. Exige a quest The Travelling Trader."
+    },
+    "Nah'Bob": {
+      "g": "blue",
+      "note": "Blue Djinn — equipamentos. Fica em Ashta'daramai. Exige a Blue Djinn Quest (facção Marid)."
+    },
+    "Haroun": {
+      "g": "blue",
+      "note": "Blue Djinn — itens mágicos. Fica em Ashta'daramai. Exige a Blue Djinn Quest (facção Marid)."
+    },
+    "Alesar": {
+      "g": "green",
+      "note": "Green Djinn — equipamentos. Fica em Mal'ouquah. Exige a Green Djinn Quest (facção Efreet)."
+    },
+    "Yaman": {
+      "g": "green",
+      "note": "Green Djinn — itens mágicos. Fica em Mal'ouquah. Exige a Green Djinn Quest (facção Efreet)."
+    },
+    "Esrik": {
+      "note": "Farmine. Só negocia depois de avançar na quest The New Frontier."
+    },
+    "Yasir": {
+      "note": "Compra produtos de criatura. Aparece aleatoriamente em Ankrahmun, Carlin ou Liberty Bay — não é todo dia."
+    },
+    "Grizzly Adams": {
+      "note": "Port Hope (Paw and Fur Society). A lista liberada depende do seu rank na Killing in the Name of…"
+    },
+    "Gnomission": {
+      "note": "Gnomos (Bigfoot's Burden). Exige rank na quest."
+    },
+    "Flint": {
+      "note": "Rathleton (Oramond)."
+    }
+  }
+}

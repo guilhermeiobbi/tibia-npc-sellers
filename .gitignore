@@ -1,0 +1,8 @@
+# intermediários do build (refeitos por parse.py/appear.py/build_data.py)
+work/
+
+# clones das fontes externas (ver README)
+vendor/
+
+__pycache__/
+*.pyc
