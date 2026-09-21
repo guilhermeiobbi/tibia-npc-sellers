@@ -48,7 +48,7 @@ button{cursor:pointer}
 .inset{background:var(--inset);border:1px solid;border-color:var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo)}
 
 header.top{grid-column:1/-1}
-header.top .body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;padding:14px 16px}
+header.top .body{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;padding:14px 16px}
 h1{margin:0;font-size:22px;line-height:1.1;color:#f3efe6;text-shadow:1px 1px 0 #000,0 0 12px rgba(242,201,76,.18)}
 h1 small{display:block;margin-top:6px;font-size:11px;font-weight:normal;color:var(--muted);text-shadow:none}
 .search{display:flex;align-items:center;gap:8px;padding:0 10px;height:44px}
@@ -89,7 +89,7 @@ details.side>summary{display:none}
 .chip{border:1px solid var(--bevel-lo);background:var(--stone-2);padding:3px 9px;box-shadow:inset 1px 1px 0 rgba(255,255,255,.12)}
 .chip:hover{background:#52504d}
 .results{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.item{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:8px;background:var(--stone-2);border:1px solid var(--bevel-lo);box-shadow:inset 1px 1px 0 rgba(255,255,255,.08)}
+.item{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;padding:8px;background:var(--stone-2);border:1px solid var(--bevel-lo);box-shadow:inset 1px 1px 0 rgba(255,255,255,.08)}
 .item h3{margin:0 0 5px;font-size:13px;color:#f3efe6;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .item h3 .best{color:var(--gold);font-weight:normal}
 .item mark{background:transparent;color:var(--gold)}
@@ -103,6 +103,18 @@ details.side>summary{display:none}
 .sold{margin-top:6px;color:var(--muted);font-size:11px}
 .sold button{border:0;background:transparent;padding:0;text-decoration:underline;color:var(--ink)}
 .npchit{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+
+/* favoritos */
+.fav{border:0;background:transparent;color:#6d6a64;font-size:16px;line-height:1;padding:4px 6px}
+.fav:hover{color:var(--gold)}
+.fav.on{color:var(--gold);text-shadow:0 0 6px rgba(242,201,76,.45)}
+.item>.fav{align-self:start}
+.favnav{display:flex;align-items:center;gap:7px;justify-self:start;white-space:nowrap;height:44px;padding:0 14px;
+  border:1px solid var(--bevel-lo);background:var(--stone-2);box-shadow:inset 1px 1px 0 rgba(255,255,255,.12)}
+.favnav:hover{background:#52504d}
+.favnav[aria-current="true"]{background:var(--inset);color:var(--gold);box-shadow:none}
+.favnav .st{color:var(--gold)}
+.favnav .cnt{color:var(--muted);font-size:11px}
 
 /* npc */
 .npchead{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;margin-bottom:6px}
@@ -118,7 +130,7 @@ details.side>summary{display:none}
 .tools input{flex:1;min-width:140px}
 .tools select{background:var(--inset)}
 .offers{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:4px}
-.offer{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:9px;align-items:center;padding:4px 8px 4px 4px;background:var(--stone-2);border:1px solid var(--bevel-lo)}
+.offer{display:grid;grid-template-columns:36px minmax(0,1fr) auto auto;gap:9px;align-items:center;padding:4px 8px 4px 4px;background:var(--stone-2);border:1px solid var(--bevel-lo)}
 .offer .nm{overflow:hidden;text-overflow:ellipsis}
 .offer .nm small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .offer .nm small button{border:0;background:transparent;padding:0;text-decoration:underline;color:inherit}
@@ -151,6 +163,9 @@ footer a{color:inherit}
         <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Nome do item: giant sword, demon shield, wolf paw…" aria-label="Nome do item">
         <button class="clear" id="clear" type="button" aria-label="Limpar busca">✕</button>
       </label>
+      <button type="button" class="favnav" id="favNav" data-favnav="1" aria-current="false">
+        <span class="st" aria-hidden="true">&#9733;</span><span>Favoritos</span><span class="cnt" id="favCount">0</span>
+      </button>
     </div>
   </header>
 
@@ -182,6 +197,44 @@ var ITEMS = D.items, NPCS = D.npcs, COLS = D.cols;
 var GROUP = {blue:'Blue Djinn', green:'Green Djinn', rashid:'Rashid'};
 var $ = function(id){return document.getElementById(id)};
 var view = $('view'), q = $('q'), title = $('mainTitle');
+
+// ---------- favoritos
+// Guardo o NOME do item, não o índice: os índices são recalculados a cada
+// rebuild dos dados, então um item novo deslocaria toda a lista salva.
+var FAVKEY = 'ondevender.fav.v1';
+var fav = Object.create(null);
+try{
+  var stored = localStorage.getItem(FAVKEY);
+  if(stored) JSON.parse(stored).forEach(function(n){ fav[n]=1 });
+}catch(_){}
+var IDX = Object.create(null);
+ITEMS.forEach(function(n,i){ IDX[n]=i });
+function favSave(){ try{ localStorage.setItem(FAVKEY, JSON.stringify(Object.keys(fav))) }catch(_){} }
+function favCount(){ return Object.keys(fav).length }
+function isFav(i){ return fav[ITEMS[i]]===1 }
+function favToggle(i){ var n=ITEMS[i]; if(fav[n]) delete fav[n]; else fav[n]=1; favSave() }
+// favoritos que ainda existem nos dados; índice crescente já é ordem alfabética
+function favList(){
+  return Object.keys(fav).map(function(n){return IDX[n]}).filter(function(i){return i!=null}).sort(function(a,b){return a-b});
+}
+function favLabel(on){ return on ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }
+function favBtn(i){
+  var on = isFav(i);
+  return '<button type="button" class="fav'+(on?' on':'')+'" data-fav="'+i+'" aria-pressed="'+on+
+    '" aria-label="'+favLabel(on)+'" title="'+favLabel(on)+'">'+(on?'\u2605':'\u2606')+'</button>';
+}
+function favPaint(btn, i){ // atualiza a estrela no lugar, sem redesenhar a lista
+  var on = isFav(i);
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', on);
+  btn.setAttribute('aria-label', favLabel(on));
+  btn.title = favLabel(on);
+  btn.textContent = on ? '\u2605' : '\u2606';
+}
+function favNavPaint(){
+  $('favCount').textContent = favCount();
+  $('favNav').setAttribute('aria-current', !!state.fav);
+}
 
 // índices: quem compra / quem vende cada item
 var buyers = ITEMS.map(function(){return []}), sellers = ITEMS.map(function(){return []});
@@ -226,7 +279,7 @@ function renderSide(){
 
 // ---------- busca
 var EXAMPLES = ['giant sword','demon shield','crown armor','dragon scale mail','wolf paw','behemoth claw','stone skin amulet','boots of haste'];
-var state = {npc:null, tab:'s', sort:'name', f:'', limit:60, open:{}};
+var state = {npc:null, fav:false, tab:'s', sort:'name', f:'', limit:60, open:{}};
 
 function hl(name, toks){
   var out = esc(name);
@@ -256,14 +309,14 @@ function itemRow(i, toks){
     var s = sl[0];
     h += '<div class="sold">À venda a partir de '+gp(s[1])+' com <button type="button" data-npc="'+s[0]+'" data-tab="b">'+esc(NPCS[s[0]].n)+'</button>'+(sl.length>1?' e mais '+(sl.length-1):'')+'.</div>';
   }
-  return h+'</div></li>';
+  return h+'</div>'+favBtn(i)+'</li>';
 }
 function renderSearch(){
   title.textContent = 'Busca';
   var raw = q.value.trim(), toks = norm(raw).split(/\s+/).filter(Boolean);
   $('searchBox').classList.toggle('has', !!raw);
   if(!toks.length){
-    view.innerHTML = '<p class="hint">Digite o nome do item lá em cima pra ver quem compra e por quanto. O melhor preço vem marcado em dourado. Ou abra um NPC na lista pra ver tudo o que ele negocia.</p>'+
+    view.innerHTML = '<p class="hint">Digite o nome do item lá em cima pra ver quem compra e por quanto. O melhor preço vem marcado em dourado. Clique na \u2606 pra guardar um item nos favoritos. Ou abra um NPC na lista pra ver tudo o que ele negocia.</p>'+
       '<div class="chips">'+EXAMPLES.map(function(e){return '<button type="button" class="chip" data-q="'+e+'">'+e+'</button>'}).join('')+'</div>';
     return;
   }
@@ -317,30 +370,50 @@ function renderNpc(){
       var b = buyers[i][0];
       if(b[1]>o[1]) extra = '<small>paga mais: <button type="button" data-npc="'+b[0]+'">'+esc(NPCS[b[0]].n)+'</button> '+b[1].toLocaleString('pt-BR')+'</small>';
     }
-    return '<li class="offer">'+spr(i)+'<span class="nm">'+esc(ITEMS[i])+extra+'</span><span class="pr">'+gp(o[1])+'</span></li>';
+    return '<li class="offer">'+spr(i)+'<span class="nm">'+esc(ITEMS[i])+extra+'</span><span class="pr">'+gp(o[1])+'</span>'+favBtn(i)+'</li>';
   }).join('')+'</ul>';
   view.innerHTML = h;
   $('ns').value = state.sort;
 }
 
-function render(){ (state.npc==null?renderSearch:renderNpc)(); renderSide(); }
+// ---------- favoritos (view)
+function renderFav(){
+  title.textContent = 'Favoritos';
+  var list = favList();
+  if(!list.length){
+    view.innerHTML = '<p class="empty">Nenhum favorito ainda. Clique na \u2606 ao lado de um item pra guardá-lo aqui \u2014 fica salvo neste navegador.</p>';
+    return;
+  }
+  view.innerHTML = '<p class="hint">'+list.length+(list.length===1?' item favoritado':' itens favoritados')+
+    ' \u00b7 <button type="button" class="more" data-clearfav="1">limpar tudo</button></p>'+
+    '<ul class="results">'+list.map(function(i){return itemRow(i,[])}).join('')+'</ul>';
+}
+
+function render(){ (state.fav?renderFav:state.npc==null?renderSearch:renderNpc)(); renderSide(); favNavPaint(); }
 
 // ---------- rota (#npc=Rashid | #q=giant sword)
 function writeHash(){
-  var h = state.npc!=null ? '#npc='+encodeURIComponent(NPCS[state.npc].n)+(state.tab==='b'?'&tab=b':'') : (q.value.trim()?'#q='+encodeURIComponent(q.value.trim()):'');
-  try{ if(h!==location.hash) history.replaceState(null,'',h||location.pathname+location.search); }catch(_){}
+  var h = state.fav ? '#fav'
+    : state.npc!=null ? '#npc='+encodeURIComponent(NPCS[state.npc].n)+(state.tab==='b'?'&tab=b':'')
+    : (q.value.trim()?'#q='+encodeURIComponent(q.value.trim()):'');
+  if(h!==location.hash) history.replaceState(null,'',h||location.pathname+location.search);
 }
 function readHash(){
   var m = /^#npc=([^&]+)(&tab=b)?/.exec(location.hash), mq = /^#q=(.+)/.exec(location.hash);
-  state.npc = null;
+  state.npc = null; state.fav = location.hash === '#fav';
   if(m){
     var name = decodeURIComponent(m[1]);
     NPCS.some(function(n,i){ if(n.n===name){state.npc=i;return true} });
     state.tab = m[2]?'b':'s';
   } else if(mq){ q.value = decodeURIComponent(mq[1]); }
 }
+function openFav(){
+  state.fav=true; state.npc=null;
+  if(window.matchMedia('(max-width:820px)').matches) $('side').open=false;
+  render(); writeHash(); $('main').scrollIntoView({block:'start'});
+}
 function openNpc(i, tab){
-  state.npc=i; state.tab=tab||'s'; state.f=''; state.sort='name';
+  state.npc=i; state.fav=false; state.tab=tab||'s'; state.f=''; state.sort='name';
   if(window.matchMedia('(max-width:820px)').matches) $('side').open=false;
   render(); writeHash(); $('main').scrollIntoView({block:'start'});
 }
@@ -349,18 +422,28 @@ function openNpc(i, tab){
 var timer;
 q.addEventListener('input', function(){
   clearTimeout(timer);
-  timer = setTimeout(function(){ state.npc=null; state.limit=60; state.open={}; render(); writeHash(); }, 90);
+  timer = setTimeout(function(){ state.npc=null; state.fav=false; state.limit=60; state.open={}; render(); writeHash(); }, 90);
 });
-q.addEventListener('focus', function(){ if(state.npc!=null && q.value.trim()){ state.npc=null; render(); writeHash(); } });
-$('clear').addEventListener('click', function(){ q.value=''; state.npc=null; render(); writeHash(); q.focus(); });
+q.addEventListener('focus', function(){ if((state.npc!=null||state.fav) && q.value.trim()){ state.npc=null; state.fav=false; render(); writeHash(); } });
+$('clear').addEventListener('click', function(){ q.value=''; state.npc=null; state.fav=false; render(); writeHash(); q.focus(); });
 $('npcFilter').addEventListener('input', renderSide);
 document.addEventListener('click', function(e){
   var t = e.target.closest('button'); if(!t) return;
   if(t.dataset.npc!=null) return openNpc(+t.dataset.npc, t.dataset.tab);
-  if(t.dataset.q){ q.value=t.dataset.q; state.npc=null; render(); writeHash(); return; }
-  if(t.dataset.open!=null){ var i=+t.dataset.open; state.open[i]=!state.open[i]; renderSearch(); return; }
+  if(t.dataset.q){ q.value=t.dataset.q; state.npc=null; state.fav=false; render(); writeHash(); return; }
+  if(t.dataset.open!=null){ var i=+t.dataset.open; state.open[i]=!state.open[i]; (state.fav?renderFav:renderSearch)(); return; }
   if(t.dataset.morehits){ state.limit+=60; renderSearch(); return; }
   if(t.dataset.settab){ state.tab=t.dataset.settab; renderNpc(); writeHash(); return; }
+  if(t.dataset.favnav){ openFav(); return; }
+  if(t.dataset.fav!=null){
+    var fi=+t.dataset.fav; favToggle(fi);
+    if(state.fav) renderFav(); else favPaint(t, fi); // na lista de favoritos o item some
+    favNavPaint(); return;
+  }
+  if(t.dataset.clearfav){
+    if(confirm('Remover todos os '+favCount()+' favoritos?')){ fav=Object.create(null); favSave(); render(); }
+    return;
+  }
 });
 view.addEventListener('input', function(e){
   if(e.target.id==='nf'){
